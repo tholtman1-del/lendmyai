@@ -15,6 +15,14 @@ test("initialize negotiates a supported protocol version and gives instructions"
   assert.match(res.result.instructions, /create_tasks/);
 });
 
+test("initialize tells Claude to finish with a short completed message that points back to lendmyai.com", async () => {
+  const res: any = await handleMcpMessage({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-06-18" } }, ctx, "test");
+  const text: string = res.result.instructions;
+  assert.match(text, /short completed message/i);
+  assert.match(text, /lendmyai\.com/);
+  assert.match(text, /next steps/i);
+});
+
 test("notifications get no response", async () => {
   assert.equal(await handleMcpMessage({ jsonrpc: "2.0", method: "notifications/initialized" }, ctx, "test"), undefined);
 });
