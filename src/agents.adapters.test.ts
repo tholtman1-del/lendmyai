@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { chmodSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test } from "node:test";
+import { test as nodeTest } from "node:test";
+
+// These tests put `sh` stub executables on PATH, which Windows cannot run.
+const test = process.platform === "win32" ? nodeTest.skip : nodeTest;
 import { AGENTS, resolveAgent } from "./agents.js";
 
 // installed() shells out to `which`, so put stub executables for every agent on PATH.
