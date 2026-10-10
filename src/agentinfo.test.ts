@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { chmodSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test } from "node:test";
+import { test as nodeTest } from "node:test";
+
+// These tests put `sh` stub executables on PATH, which Windows cannot run.
+const test = process.platform === "win32" ? nodeTest.skip : nodeTest;
 import { AGENTS, agentInfo } from "./agents.js";
 
 // Stub CLIs on PATH: codex answers --version, gemini hangs, claude is missing.
