@@ -67,11 +67,24 @@ test("shell tool flags are added to headless and stream runs but not interactive
   assert.deepEqual(off.streamCommand("go").cmd[1], claude.stream!.args("go"));
 });
 
-test("agents without a stream variant fall back to their headless argv", () => {
+test("an agent without a stream variant falls back to its headless argv", () => {
+  // Every built-in agent streams now, so take the stream variant away for this test only.
+  const entry = byName("gemini");
+  const saved = entry.stream;
+  delete entry.stream;
+  try {
+    const gemini = resolveAgent({ agent: "gemini" });
+    assert.deepEqual(gemini.command("go", true)[1], entry.headless("go"));
+    assert.deepEqual(gemini.streamCommand("go").cmd, ["gemini", entry.headless("go")]);
+    assert.equal(gemini.streamCommand("go").format("a line"), "a line");
+  } finally {
+    entry.stream = saved;
+  }
+});
+
+test("gemini streams its stream-json variant", () => {
   const gemini = resolveAgent({ agent: "gemini" });
-  assert.deepEqual(gemini.command("go", true)[1], byName("gemini").headless("go"));
-  assert.deepEqual(gemini.streamCommand("go").cmd, ["gemini", byName("gemini").headless("go")]);
-  assert.equal(gemini.streamCommand("go").format("a line"), "a line");
+  assert.deepEqual(gemini.streamCommand("go").cmd, ["gemini", byName("gemini").stream!.args("go")]);
 });
 
 test("codex streams with --json and no shell tool flags", () => {
