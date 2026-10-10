@@ -69,8 +69,9 @@ export interface ResolvedAgent extends RunInfo {
   streamCommand(prompt: string): StreamRun;
 }
 
-function installed(bin: string): boolean {
-  return spawnSync("which", [bin], { stdio: "ignore" }).status === 0;
+export function installed(bin: string, run: typeof spawnSync = spawnSync): boolean {
+  const [cmd, args] = process.platform === "win32" ? ["where", [bin]] : ["which", [bin]];
+  return run(cmd, args, { stdio: "ignore" }).status === 0;
 }
 
 export function installedAgents(): string[] {
