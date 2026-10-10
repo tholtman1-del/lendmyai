@@ -31,5 +31,5 @@ test("agentInfo lists every agent, with versions, default and install hints", ()
   assert.equal(by.claude.buildAndTest, true);
   assert.equal(by.codex.streaming, true);
   assert.equal(by.codex.buildAndTest, false);
-  assert.equal(by.gemini.streaming, false);
+  assert.equal(by.gemini.streaming, true);
 });
