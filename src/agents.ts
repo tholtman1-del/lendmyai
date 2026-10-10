@@ -117,7 +117,9 @@ export function resolveAgent(opts: { agent?: string; custom?: string; model?: st
 }
 
 export function runAgent(cmd: [string, string[]], cwd: string): number {
-  const res = spawnSync(cmd[0], cmd[1], { cwd, stdio: "inherit" });
+  // On Windows, npm-installed CLIs are .cmd/.ps1 shims, not real executables;
+  // child_process can't exec those without a shell, so it'd fail with ENOENT.
+  const res = spawnSync(cmd[0], cmd[1], { cwd, stdio: "inherit", shell: process.platform === "win32" });
   if (res.error) throw res.error;
   return res.status ?? 1;
 }
@@ -128,7 +130,8 @@ export function streamAgent(
   cwd: string,
   onLine: (line: string) => void,
 ): { done: Promise<number>; kill(): void } {
-  const child = spawn(run.cmd[0], run.cmd[1], { cwd, stdio: ["ignore", "pipe", "pipe"] });
+  // Same .cmd/.ps1 shim issue as runAgent: Windows needs a shell to find npm-installed CLIs.
+  const child = spawn(run.cmd[0], run.cmd[1], { cwd, stdio: ["ignore", "pipe", "pipe"], shell: process.platform === "win32" });
   const pipe = (stream: NodeJS.ReadableStream, format: (l: string) => string | null) => {
     let buf = "";
     const handle = (l: string) => {
