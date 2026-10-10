@@ -22,6 +22,8 @@ interface Job {
   id: string;
   ref: string;
   agent: string;
+  /** Model chosen for this run, if any. It is recorded on the commit and pull request. */
+  model?: string;
   status: "starting" | "running" | "review" | "completing" | "done" | "error";
   log: string[];
   review?: Review;
@@ -113,7 +115,7 @@ const localRoutes: Route[] = [
     });
     const agent = resolveAgent({ agent: body?.agent || undefined, model: modelOf(body) });
 
-    const job: Job = { id: String(++jobSeq), ref, agent: agent.name, status: "starting", log: [], startedAt: new Date().toISOString() };
+    const job: Job = { id: String(++jobSeq), ref, agent: agent.name, model: agent.model, status: "starting", log: [], startedAt: new Date().toISOString() };
     jobs.set(job.id, job);
     const log = (line: string) => job.log.push(line);
 
@@ -204,7 +206,7 @@ const localRoutes: Route[] = [
       job.tasks = tasks.map((t) => `${t.owner}/${t.repo}#${t.number}`);
       if (!tasks.length) job.log.push("No tasks are waiting for someone right now.");
       else {
-        job.log.push(`Working on ${tasks.length} task(s) with ${agent.name}…`);
+        job.log.push(`Working on ${tasks.length} task(s) with ${agent.name}${agent.model ? ` (${agent.model})` : ""}…`);
         job.run = startTasks(tasks, login, agent, (ref, line) => job.log.push(`[${ref}] ${line}`), parallel);
         job.outcomes = await job.run.done;
       }
@@ -239,7 +241,7 @@ const localRoutes: Route[] = [
       const prs = await findPrs(repo);
       if (!prs.length) job.log.push("No pull requests in review that you can merge.");
       else {
-        job.log.push(`Reviewing ${prs.length} pull request(s) with ${agent.name}…`);
+        job.log.push(`Reviewing ${prs.length} pull request(s) with ${agent.name}${agent.model ? ` (${agent.model})` : ""}…`);
         job.outcomes = await reviewPrs(prs, agent, (ref, line) => job.log.push(`[${ref}] ${line}`));
       }
       job.status = "done";
@@ -288,7 +290,7 @@ const localRoutes: Route[] = [
     job.status = "completing";
     try {
       const { task, ws, login } = job.ctx;
-      job.result = await complete(task, ws, login, job.agent, choice, job.review);
+      job.result = await complete(task, ws, login, job.agent, choice, job.review, { model: job.model });
       job.status = "done";
     } catch (e) {
       job.status = "review";
